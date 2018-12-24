@@ -1,4 +1,4 @@
-# cryptopp
+# Crypto++
 Crypto++ with CMake build system
 This is git repository is currently based on Crypto++ 7.0 and will be
 updated from time to time to track the most recent release. The only
@@ -13,3 +13,7 @@ Currently, the CMake-based build can create shared and static versions of
 `x86_64` architectures on Windows (Visual Studio, MinGW), MacOS (Clang) and
 Linux (GCC & Clang). The `armv7` and `armv8` architectures are supported on
 Linux (GCC & Clang). Other combinations may work but have not been tested.
+
+CMake files are supplied by `https://github.com/noloader/cryptopp-cmake.git`
+
+Crypto++ files are supplied by `https://github.com/weidai11/cryptopp.git`
