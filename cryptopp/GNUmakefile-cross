@@ -26,10 +26,6 @@ EGREP ?= egrep
 LN ?= ln -sf
 LDCONF ?= /sbin/ldconfig -n
 
-INSTALL = install
-INSTALL_PROGRAM = $(INSTALL)
-INSTALL_DATA = $(INSTALL) -m 644
-
 IS_IOS ?= 0
 IS_ANDROID ?= 0
 IS_ARM_EMBEDDED ?= 0
@@ -188,6 +184,9 @@ ifeq ($(DETECT_FEATURES),1)
   ifneq ($(strip $(TCXXFLAGS)),)
     $(info Using testing flags: $(TCXXFLAGS))
   endif
+  #TPROG = TestPrograms/test_cxx.cxx
+  #$(info Testing compile... )
+  #$(info $(shell $(CXX) $(TCXXFLAGS) $(ZOPT) $(TOPT) $(TPROG) -o $(TOUT) 1>/dev/null))
 endif
 
 # For the previous messages
@@ -335,6 +334,13 @@ ifeq ($(DETECT_FEATURES),1)
     endif
   endif
 
+  # Drop to SSE2 if available
+  ifeq ($(GCM_FLAG),)
+    ifneq ($(SSE2_FLAG),)
+      GCM_FLAG = $(SSE2_FLAG)
+    endif
+  endif
+
 # DETECT_FEATURES
 endif
 
@@ -378,10 +384,10 @@ ifeq ($(IS_ARM32),1)
     SM4_FLAG = $(NEON_FLAG)
   else
     NEON_FLAG =
-    CXXFLAGS += -DCRYPTOPP_DISABLE_NEON
+    CXXFLAGS += -DCRYPTOPP_DISABLE_ASM
   endif
 
-# IS_NEON
+# IS_ARM32
 endif
 
 ifeq ($(IS_ARMV8),1)
@@ -411,7 +417,7 @@ ifeq ($(IS_ARMV8),1)
 
   TPROG = TestPrograms/test_arm_asimd.cxx
   TOPT = $(ASIMD_FLAG)
-  HAVE_OPT = $(shell $(CXX) $(CXXFLAGS) $(ACLE_FLAG) $(ZOPT) $(TOPT) $(TPROG) -o $(TOUT) 2>&1 | tr ' ' '\n' | wc -l)
+  HAVE_OPT = $(shell $(CXX) $(TCXXFLAGS) $(ACLE_FLAG) $(ZOPT) $(TOPT) $(TPROG) -o $(TOUT) 2>&1 | tr ' ' '\n' | wc -l)
   ifeq ($(strip $(HAVE_OPT)),0)
     ARIA_FLAG = $(ASIMD_FLAG)
     BLAKE2B_FLAG = $(ASIMD_FLAG)
@@ -433,7 +439,7 @@ ifeq ($(IS_ARMV8),1)
 
     TPROG = TestPrograms/test_arm_crc.cxx
     TOPT = $(CRC_FLAG)
-    HAVE_OPT = $(shell $(CXX) $(CXXFLAGS) $(ACLE_FLAG) $(ZOPT) $(TOPT) $(TPROG) -o $(TOUT) 2>&1 | tr ' ' '\n' | wc -l)
+    HAVE_OPT = $(shell $(CXX) $(TCXXFLAGS) $(ACLE_FLAG) $(ZOPT) $(TOPT) $(TPROG) -o $(TOUT) 2>&1 | tr ' ' '\n' | wc -l)
     ifneq ($(strip $(HAVE_OPT)),0)
       CRC_FLAG =
       CXXFLAGS += -DCRYPTOPP_ARM_CRC32_AVAILABLE=0
@@ -441,7 +447,7 @@ ifeq ($(IS_ARMV8),1)
 
     TPROG = TestPrograms/test_arm_aes.cxx
     TOPT = $(AES_FLAG)
-    HAVE_OPT = $(shell $(CXX) $(CXXFLAGS) $(ACLE_FLAG) $(ZOPT) $(TOPT) $(TPROG) -o $(TOUT) 2>&1 | tr ' ' '\n' | wc -l)
+    HAVE_OPT = $(shell $(CXX) $(TCXXFLAGS) $(ACLE_FLAG) $(ZOPT) $(TOPT) $(TPROG) -o $(TOUT) 2>&1 | tr ' ' '\n' | wc -l)
     ifneq ($(strip $(HAVE_OPT)),0)
       AES_FLAG =
       CXXFLAGS += -DCRYPTOPP_ARM_AES_AVAILABLE=0
@@ -449,7 +455,7 @@ ifeq ($(IS_ARMV8),1)
 
     TPROG = TestPrograms/test_arm_pmull.cxx
     TOPT = $(PMULL_FLAG)
-    HAVE_OPT = $(shell $(CXX) $(CXXFLAGS) $(ACLE_FLAG) $(ZOPT) $(TOPT) $(TPROG) -o $(TOUT) 2>&1 | tr ' ' '\n' | wc -l)
+    HAVE_OPT = $(shell $(CXX) $(TCXXFLAGS) $(ACLE_FLAG) $(ZOPT) $(TOPT) $(TPROG) -o $(TOUT) 2>&1 | tr ' ' '\n' | wc -l)
     ifneq ($(strip $(HAVE_OPT)),0)
       PMULL_FLAG =
       CXXFLAGS += -DCRYPTOPP_ARM_PMULL_AVAILABLE=0
@@ -457,7 +463,7 @@ ifeq ($(IS_ARMV8),1)
 
     TPROG = TestPrograms/test_arm_sha.cxx
     TOPT = $(SHA_FLAG)
-    HAVE_OPT = $(shell $(CXX) $(CXXFLAGS) $(ACLE_FLAG) $(ZOPT) $(TOPT) $(TPROG) -o $(TOUT) 2>&1 | tr ' ' '\n' | wc -l)
+    HAVE_OPT = $(shell $(CXX) $(TCXXFLAGS) $(ACLE_FLAG) $(ZOPT) $(TOPT) $(TPROG) -o $(TOUT) 2>&1 | tr ' ' '\n' | wc -l)
     ifneq ($(strip $(HAVE_OPT)),0)
       SHA_FLAG =
       CXXFLAGS += -DCRYPTOPP_ARM_SHA_AVAILABLE=0
@@ -465,7 +471,7 @@ ifeq ($(IS_ARMV8),1)
 
     TPROG = TestPrograms/test_arm_sm3.cxx
     TOPT = -march=armv8.4-a+crypto
-    HAVE_OPT = $(shell $(CXX) $(CXXFLAGS) $(ACLE_FLAG) $(ZOPT) $(TOPT) $(TPROG) -o $(TOUT) 2>&1 | tr ' ' '\n' | wc -l)
+    HAVE_OPT = $(shell $(CXX) $(TCXXFLAGS) $(ACLE_FLAG) $(ZOPT) $(TOPT) $(TPROG) -o $(TOUT) 2>&1 | tr ' ' '\n' | wc -l)
     ifeq ($(strip $(HAVE_OPT)),0)
       SM3_FLAG = -march=armv8.4-a+crypto
       SM4_FLAG = -march=armv8.4-a+crypto
@@ -473,7 +479,7 @@ ifeq ($(IS_ARMV8),1)
 
     TPROG = TestPrograms/test_arm_sha3.cxx
     TOPT = -march=armv8.4-a+crypto
-    HAVE_OPT = $(shell $(CXX) $(CXXFLAGS) $(ACLE_FLAG) $(ZOPT) $(TOPT) $(TPROG) -o $(TOUT) 2>&1 | tr ' ' '\n' | wc -l)
+    HAVE_OPT = $(shell $(CXX) $(TCXXFLAGS) $(ACLE_FLAG) $(ZOPT) $(TOPT) $(TPROG) -o $(TOUT) 2>&1 | tr ' ' '\n' | wc -l)
     ifeq ($(strip $(HAVE_OPT)),0)
       SHA3_FLAG = -march=armv8.4-a+crypto
       SHA512_FLAG = -march=armv8.4-a+crypto
@@ -693,33 +699,46 @@ distclean: clean autotools-clean cmake-clean
 .PHONY: install
 install: cryptest.exe install-lib
 	@-$(MKDIR) $(DESTDIR)$(BINDIR)
-	$(INSTALL_PROGRAM) cryptest.exe $(DESTDIR)$(BINDIR)
+	$(CP) cryptest.exe $(DESTDIR)$(BINDIR)
+	$(CHMOD) 0755 $(DESTDIR)$(BINDIR)/cryptest.exe
 	@-$(MKDIR) $(DESTDIR)$(DATADIR)/cryptopp/TestData
 	@-$(MKDIR) $(DESTDIR)$(DATADIR)/cryptopp/TestVectors
-	$(INSTALL_DATA) TestData/*.dat $(DESTDIR)$(DATADIR)/cryptopp/TestData
-	$(INSTALL_DATA) TestVectors/*.txt $(DESTDIR)$(DATADIR)/cryptopp/TestVectors
+	$(CP) TestData/*.dat $(DESTDIR)$(DATADIR)/cryptopp/TestData
+	$(CHMOD) 0644 $(DESTDIR)$(DATADIR)/cryptopp/TestData/*.dat
+	$(CP) TestVectors/*.txt $(DESTDIR)$(DATADIR)/cryptopp/TestVectors
+	$(CHMOD) 0644 $(DESTDIR)$(DATADIR)/cryptopp/TestVectors/*.txt
 
 # A recipe to install only the library, and not cryptest.exe. Also
 # see https://github.com/weidai11/cryptopp/issues/653.
 .PHONY: install-lib
 install-lib:
 	@-$(MKDIR) $(DESTDIR)$(INCLUDEDIR)/cryptopp
-	$(INSTALL_DATA) *.h $(DESTDIR)$(INCLUDEDIR)/cryptopp
+	$(CP) *.h $(DESTDIR)$(INCLUDEDIR)/cryptopp
+	$(CHMOD) 0644 $(DESTDIR)$(INCLUDEDIR)/cryptopp/*.h
 ifneq ($(wildcard libcryptopp.a),)
 	@-$(MKDIR) $(DESTDIR)$(LIBDIR)
-	$(INSTALL_DATA) libcryptopp.a $(DESTDIR)$(LIBDIR)
+	$(CP) libcryptopp.a $(DESTDIR)$(LIBDIR)
+	$(CHMOD) 0644 $(DESTDIR)$(LIBDIR)/libcryptopp.a
 endif
 ifneq ($(wildcard libcryptopp.dylib),)
 	@-$(MKDIR) $(DESTDIR)$(LIBDIR)
-	$(INSTALL_PROGRAM) libcryptopp.dylib $(DESTDIR)$(LIBDIR)
+	$(CP) libcryptopp.dylib $(DESTDIR)$(LIBDIR)
+	$(CHMOD) 0755 $(DESTDIR)$(LIBDIR)/libcryptopp.dylib
+	-install_name_tool -id $(DESTDIR)$(LIBDIR)/libcryptopp.dylib $(DESTDIR)$(LIBDIR)/libcryptopp.dylib
 endif
 ifneq ($(wildcard libcryptopp.so$(SOLIB_VERSION_SUFFIX)),)
 	@-$(MKDIR) $(DESTDIR)$(LIBDIR)
-	$(INSTALL_PROGRAM) libcryptopp.so$(SOLIB_VERSION_SUFFIX) $(DESTDIR)$(LIBDIR)
+	$(CP) libcryptopp.so$(SOLIB_VERSION_SUFFIX) $(DESTDIR)$(LIBDIR)
+	$(CHMOD) 0755 $(DESTDIR)$(LIBDIR)/libcryptopp.so$(SOLIB_VERSION_SUFFIX)
 ifeq ($(HAS_SOLIB_VERSION),1)
 	-$(LN) libcryptopp.so$(SOLIB_VERSION_SUFFIX) $(DESTDIR)$(LIBDIR)/libcryptopp.so
 	$(LDCONF) $(DESTDIR)$(LIBDIR)
 endif
+endif
+ifneq ($(wildcard libcryptopp.pc),)
+	@-$(MKDIR) $(DESTDIR)$(LIBDIR)/pkgconfig
+	$(CP) libcryptopp.pc $(DESTDIR)$(LIBDIR)/pkgconfig
+	$(CHMOD) 0644 $(DESTDIR)$(LIBDIR)/pkgconfig/libcryptopp.pc
 endif
 
 .PHONY: remove uninstall
