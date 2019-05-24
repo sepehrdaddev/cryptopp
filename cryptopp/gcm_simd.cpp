@@ -60,10 +60,6 @@
 #define M128_CAST(x) ((__m128i *)(void *)(x))
 #define CONST_M128_CAST(x) ((const __m128i *)(const void *)(x))
 
-// GCC cast warning
-#define UINT64X2_CAST(x) ((uint64x2_t *)(void *)(x))
-#define CONST_UINT64X2_CAST(x) ((const uint64x2_t *)(const void *)(x))
-
 // Squash MS LNK4221 and libtool warnings
 extern const char GCM_SIMD_FNAME[] = __FILE__;
 
@@ -219,10 +215,7 @@ bool CPU_ProbePMULL()
 #if CRYPTOPP_ARM_NEON_AVAILABLE
 void GCM_Xor16_NEON(byte *a, const byte *b, const byte *c)
 {
-    CRYPTOPP_ASSERT(IsAlignedOn(a,GetAlignmentOf<uint64x2_t>()));
-    CRYPTOPP_ASSERT(IsAlignedOn(b,GetAlignmentOf<uint64x2_t>()));
-    CRYPTOPP_ASSERT(IsAlignedOn(c,GetAlignmentOf<uint64x2_t>()));
-    *UINT64X2_CAST(a) = veorq_u64(*CONST_UINT64X2_CAST(b), *CONST_UINT64X2_CAST(c));
+	vst1q_u8(a, veorq_u8(vld1q_u8(b), vld1q_u8(c)));
 }
 #endif  // CRYPTOPP_ARM_NEON_AVAILABLE
 
@@ -569,12 +562,12 @@ void GCM_ReverseHashBufferIfNeeded_CLMUL(byte *hashBuffer)
 
 // ***************************** POWER8 ***************************** //
 
-#if CRYPTOPP_POWER7_AVAILABLE
-void GCM_Xor16_POWER7(byte *a, const byte *b, const byte *c)
+#if CRYPTOPP_POWER8_AVAILABLE
+void GCM_Xor16_POWER8(byte *a, const byte *b, const byte *c)
 {
     VecStore(VecXor(VecLoad(b), VecLoad(c)), a);
 }
-#endif  // CRYPTOPP_POWER7_AVAILABLE
+#endif  // CRYPTOPP_POWER8_AVAILABLE
 
 #if CRYPTOPP_POWER8_VMULL_AVAILABLE
 

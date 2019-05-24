@@ -38,9 +38,19 @@
 // https://github.com/weidai11/cryptopp/issues/743
 #if defined(__xlC__) && (__xlC__ < 0x0d01)
 # define CRYPTOPP_DISABLE_ALTIVEC 1
-# define CRYPTOPP_POWER7_ALTIVEC 1
 # undef CRYPTOPP_POWER7_AVAILABLE
+# undef CRYPTOPP_POWER8_AVAILABLE
 # undef CRYPTOPP_ALTIVEC_AVAILABLE
+#endif
+
+// Can't use GetAlignmentOf<word64>() because of C++11 and constexpr
+// Can use 'const unsigned int' because of MSVC 2013
+#if (CRYPTOPP_BOOL_X86 || CRYPTOPP_BOOL_X32 || CRYPTOPP_BOOL_X64)
+# define ALIGN_SPEC32 16
+# define ALIGN_SPEC64 16
+#else
+# define ALIGN_SPEC32 4
+# define ALIGN_SPEC64 8
 #endif
 
 NAMESPACE_BEGIN(CryptoPP)
@@ -49,13 +59,13 @@ NAMESPACE_BEGIN(CryptoPP)
 extern const word32 BLAKE2S_IV[8];
 extern const word64 BLAKE2B_IV[8];
 
-CRYPTOPP_ALIGN_DATA(16)
+CRYPTOPP_ALIGN_DATA(ALIGN_SPEC32)
 const word32 BLAKE2S_IV[8] = {
     0x6A09E667UL, 0xBB67AE85UL, 0x3C6EF372UL, 0xA54FF53AUL,
     0x510E527FUL, 0x9B05688CUL, 0x1F83D9ABUL, 0x5BE0CD19UL
 };
 
-CRYPTOPP_ALIGN_DATA(16)
+CRYPTOPP_ALIGN_DATA(ALIGN_SPEC64)
 const word64 BLAKE2B_IV[8] = {
     W64LIT(0x6a09e667f3bcc908), W64LIT(0xbb67ae8584caa73b),
     W64LIT(0x3c6ef372fe94f82b), W64LIT(0xa54ff53a5f1d36f1),
@@ -72,7 +82,7 @@ using CryptoPP::word32;
 using CryptoPP::word64;
 using CryptoPP::rotrConstant;
 
-CRYPTOPP_ALIGN_DATA(16)
+CRYPTOPP_ALIGN_DATA(ALIGN_SPEC32)
 const byte BLAKE2S_SIGMA[10][16] = {
     {  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15 },
     { 14, 10,  4,  8,  9, 15, 13,  6,  1, 12,  0,  2, 11,  7,  5,  3 },
@@ -86,7 +96,7 @@ const byte BLAKE2S_SIGMA[10][16] = {
     { 10,  2,  8,  4,  7,  6,  1,  5, 15, 11,  9, 14,  3, 12, 13 , 0 },
 };
 
-CRYPTOPP_ALIGN_DATA(16)
+CRYPTOPP_ALIGN_DATA(ALIGN_SPEC32)
 const byte BLAKE2B_SIGMA[12][16] = {
     {  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15 },
     { 14, 10,  4,  8,  9, 15, 13,  6,  1, 12,  0,  2, 11,  7,  5,  3 },
@@ -171,8 +181,8 @@ extern void BLAKE2_Compress32_NEON(const byte* input, BLAKE2s_State& state);
 extern void BLAKE2_Compress64_NEON(const byte* input, BLAKE2b_State& state);
 #endif
 
-#if CRYPTOPP_POWER7_AVAILABLE
-extern void BLAKE2_Compress32_POWER7(const byte* input, BLAKE2s_State& state);
+#if CRYPTOPP_POWER8_AVAILABLE
+extern void BLAKE2_Compress32_POWER8(const byte* input, BLAKE2s_State& state);
 #elif CRYPTOPP_ALTIVEC_AVAILABLE
 extern void BLAKE2_Compress32_ALTIVEC(const byte* input, BLAKE2s_State& state);
 #endif
@@ -233,8 +243,8 @@ unsigned int BLAKE2s::OptimalDataAlignment() const
         return 4;
     else
 #endif
-#if (CRYPTOPP_POWER7_AVAILABLE)
-    if (HasPower7())
+#if (CRYPTOPP_POWER8_AVAILABLE)
+    if (HasPower8())
         return 16;
     else
 #elif (CRYPTOPP_ALTIVEC_AVAILABLE)
@@ -257,9 +267,9 @@ std::string BLAKE2s::AlgorithmProvider() const
         return "NEON";
     else
 #endif
-#if (CRYPTOPP_POWER7_AVAILABLE)
-    if (HasPower7())
-        return "Power7";
+#if (CRYPTOPP_POWER8_AVAILABLE)
+    if (HasPower8())
+        return "Power8";
     else
 #elif (CRYPTOPP_ALTIVEC_AVAILABLE)
     if (HasAltivec())
@@ -690,10 +700,10 @@ void BLAKE2s::Compress(const byte *input)
         return BLAKE2_Compress32_NEON(input, m_state);
     }
 #endif
-#if CRYPTOPP_POWER7_AVAILABLE
-    if(HasPower7())
+#if CRYPTOPP_POWER8_AVAILABLE
+    if(HasPower8())
     {
-        return BLAKE2_Compress32_POWER7(input, m_state);
+        return BLAKE2_Compress32_POWER8(input, m_state);
     }
 #elif CRYPTOPP_ALTIVEC_AVAILABLE
     if(HasAltivec())

@@ -1,7 +1,7 @@
 # Crypto++
 
 Crypto++ with CMake build system
-This is git repository is currently based on Crypto++ 8.1 and will be
+This is git repository is currently based on Crypto++ 8.3 and will be
 updated from time to time to track the most recent release. The only
 modification is the addition of a CMake-based build system.
 

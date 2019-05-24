@@ -6,16 +6,12 @@ function cleanup {
 }
 trap cleanup EXIT
 
+#############################################################################
+
 GREP=grep
 SED=sed
 AWK=awk
 MAKE=make
-
-# Fixup ancient Bash
-# https://unix.stackexchange.com/q/468579/56041
-if [[ -z "$BASH_SOURCE" ]]; then
-	BASH_SOURCE="$0"
-fi
 
 # Fixup, Solaris and friends
 if [[ (-d /usr/xpg4/bin) ]]; then
@@ -35,7 +31,6 @@ if [[ "$IS_DARWIN" -ne 0 ]]; then
 fi
 
 # Fixup for Solaris and BSDs
-# Fixup for Solaris and BSDs
 if [[ ! -z $(command -v gmake) ]]; then
 	MAKE=gmake
 else
@@ -53,23 +48,29 @@ elif [[ ! -z $(command -v glibtool) ]]; then
 	LIBTOOLIZE=$(command -v glibtool)
 fi
 
-# Fecth the three required files
-if ! wget --no-check-certificate 'https://raw.githubusercontent.com/noloader/cryptopp-autotools/master/Makefile.am' -O Makefile.am; then
-	echo "Makefile.am download failed"
-	[[ "$0" = "${BASH_SOURCE[0]}" ]] && exit 1 || return 1
-fi
+#############################################################################
 
-if ! wget --no-check-certificate 'https://raw.githubusercontent.com/noloader/cryptopp-autotools/master/configure.ac' -O configure.ac; then
+echo "Downloading configure.ac"
+if ! wget -O configure.ac -q --no-check-certificate 'https://raw.githubusercontent.com/noloader/cryptopp-autotools/master/configure.ac'; then
 	echo "configure.ac download failed"
 	[[ "$0" = "${BASH_SOURCE[0]}" ]] && exit 1 || return 1
 fi
 
-if ! wget --no-check-certificate 'https://raw.githubusercontent.com/noloader/cryptopp-autotools/master/libcryptopp.pc.in' -O libcryptopp.pc.in; then
+echo "Downloading Makefile.am"
+if ! wget -O Makefile.am -q --no-check-certificate 'https://raw.githubusercontent.com/noloader/cryptopp-autotools/master/Makefile.am'; then
+	echo "Makefile.am download failed"
+	[[ "$0" = "${BASH_SOURCE[0]}" ]] && exit 1 || return 1
+fi
+
+echo "Downloading libcryptopp.pc.in"
+if ! wget -O libcryptopp.pc.in -q --no-check-certificate 'https://raw.githubusercontent.com/noloader/cryptopp-autotools/master/libcryptopp.pc.in'; then
 	echo "libcryptopp.pc.in download failed"
 	[[ "$0" = "${BASH_SOURCE[0]}" ]] && exit 1 || return 1
 fi
 
 mkdir -p m4/
+
+#############################################################################
 
 if [[ -z $(command -v autoupdate) ]]; then
 	echo "Cannot find autoupdate. Things may fail."
@@ -79,18 +80,22 @@ if [[ -z "$LIBTOOLIZE" ]]; then
 	echo "Cannot find libtoolize. Things may fail."
 fi
 
+if [[ -z $(command -v automake) ]]; then
+	echo "Cannot find automake. Things may fail."
+fi
+
 if [[ -z $(command -v autoreconf) ]]; then
 	echo "Cannot find autoreconf. Things may fail."
 fi
 
 echo "Running autoupdate"
-if ! autoupdate 2>/dev/null; then
+if ! autoupdate &>/dev/null; then
 	echo "autoupdate failed."
 	[[ "$0" = "${BASH_SOURCE[0]}" ]] && exit 1 || return 1
 fi
 
 echo "Running libtoolize"
-if ! "$LIBTOOLIZE" 2>/dev/null; then
+if ! "$LIBTOOLIZE" --force --install &>/dev/null; then
 	echo "libtoolize failed."
 	[[ "$0" = "${BASH_SOURCE[0]}" ]] && exit 1 || return 1
 fi
@@ -98,36 +103,37 @@ fi
 # Run autoreconf twice on failure. Also see
 # https://github.com/tracebox/tracebox/issues/57
 echo "Running autoreconf"
-if ! autoreconf 2>/dev/null; then
+if ! autoreconf --force --install &>/dev/null; then
 	echo "autoreconf failed, running again."
-	if ! autoreconf -fi; then
+	if ! autoreconf --force --install; then
 		echo "autoreconf failed, again."
 		[[ "$0" = "${BASH_SOURCE[0]}" ]] && exit 1 || return 1
 	fi
 fi
 
-# Sparc need +w
-if [[ -e config.sub ]]; then
-	chmod +w config.sub
-fi
-if [[ -e config.guess ]]; then
-	chmod +w config.guess
-fi
+#############################################################################
 
 # Update config.sub config.guess. GNU recommends using the latest for all projects.
 echo "Updating config.sub"
-wget --no-check-certificate 'https://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.sub' -O config.sub
+wget -O config.sub.new -q --no-check-certificate 'https://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.sub'
 
-if [[ -e config.sub ]]; then
-	chmod +x config.sub
-fi
+# Solaris removes +w, can't overwrite
+chmod +w config.sub
+mv config.sub.new config.sub
+chmod +x config.sub
 
 echo "Updating config.guess"
-wget --no-check-certificate 'https://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.guess' -O config.guess
+wget -O config.guess.new -q --no-check-certificate 'https://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.guess'
 
-if [[ -e config.guess ]]; then
-	chmod +x config.guess
-fi
+# Solaris removes +w, can't overwrite
+chmod +w config.guess
+mv config.guess.new config.guess
+chmod +x config.guess
+
+#############################################################################
+
+echo "Running configure"
+echo ""
 
 if ! ./configure; then
 	echo "configure failed."
@@ -135,6 +141,8 @@ if ! ./configure; then
 fi
 
 "$MAKE" clean 2>/dev/null
+
+#############################################################################
 
 if ! "$MAKE" -j2 -f Makefile; then
 	echo "make failed."

@@ -16,23 +16,15 @@
 // #undef CRYPTOPP_SSE41_AVAILABLE
 // #undef CRYPTOPP_ARM_NEON_AVAILABLE
 
-#if (CRYPTOPP_SSSE3_AVAILABLE)
+#if (CRYPTOPP_SSE41_AVAILABLE)
 # include "adv_simd.h"
 # include <pmmintrin.h>
 # include <tmmintrin.h>
-#endif
-
-#if (CRYPTOPP_SSE41_AVAILABLE)
 # include <smmintrin.h>
 #endif
 
 #if defined(__XOP__)
 # include <ammintrin.h>
-#endif
-
-#if defined(__AVX512F__)
-# define CRYPTOPP_AVX512_ROTATE 1
-# include <immintrin.h>
 #endif
 
 // C1189: error: This header is specific to ARM targets
@@ -106,13 +98,8 @@ inline uint32x4_t RotateRight32(const uint32x4_t& val)
 template <>
 inline uint32x4_t RotateLeft32<8>(const uint32x4_t& val)
 {
-#if (CRYPTOPP_BIG_ENDIAN)
-    const uint8_t maskb[16] = { 14,13,12,15, 10,9,8,11, 6,5,4,7, 2,1,0,3 };
-    const uint8x16_t mask = vld1q_u8(maskb);
-#else
     const uint8_t maskb[16] = { 3,0,1,2, 7,4,5,6, 11,8,9,10, 15,12,13,14 };
     const uint8x16_t mask = vld1q_u8(maskb);
-#endif
 
     return vreinterpretq_u32_u8(
         vqtbl1q_u8(vreinterpretq_u8_u32(val), mask));
@@ -122,13 +109,8 @@ inline uint32x4_t RotateLeft32<8>(const uint32x4_t& val)
 template <>
 inline uint32x4_t RotateRight32<8>(const uint32x4_t& val)
 {
-#if (CRYPTOPP_BIG_ENDIAN)
-    const uint8_t maskb[16] = { 12,15,14,13, 8,11,10,9, 4,7,6,5, 0,3,2,1 };
-    const uint8x16_t mask = vld1q_u8(maskb);
-#else
     const uint8_t maskb[16] = { 1,2,3,0, 5,6,7,4, 9,10,11,8, 13,14,14,12 };
     const uint8x16_t mask = vld1q_u8(maskb);
-#endif
 
     return vreinterpretq_u32_u8(
         vqtbl1q_u8(vreinterpretq_u8_u32(val), mask));
@@ -576,7 +558,7 @@ inline void SIMON64_Enc_Block(uint32x4_p &block0, uint32x4_p &block1,
 
     for (int i = 0; i < static_cast<int>(rounds & ~1)-1; i += 2)
     {
-#if CRYPTOPP_POWER7_AVAILABLE
+#if CRYPTOPP_POWER8_AVAILABLE
         const uint32x4_p rk1 = vec_splats(subkeys[i]);
         const uint32x4_p rk2 = vec_splats(subkeys[i+1]);
 #else
@@ -592,7 +574,7 @@ inline void SIMON64_Enc_Block(uint32x4_p &block0, uint32x4_p &block1,
 
     if (rounds & 1)
     {
-#if CRYPTOPP_POWER7_AVAILABLE
+#if CRYPTOPP_POWER8_AVAILABLE
         const uint32x4_p rk = vec_splats(subkeys[rounds-1]);
 #else
         const uint8x16_p m = {0,1,2,3, 0,1,2,3, 0,1,2,3, 0,1,2,3};
@@ -634,7 +616,7 @@ inline void SIMON64_Dec_Block(uint32x4_p &block0, uint32x4_p &block1,
     if (rounds & 1)
     {
         std::swap(x1, y1);
-#if CRYPTOPP_POWER7_AVAILABLE
+#if CRYPTOPP_POWER8_AVAILABLE
         const uint32x4_p rk = vec_splats(subkeys[rounds-1]);
 #else
         const uint8x16_p m = {0,1,2,3, 0,1,2,3, 0,1,2,3, 0,1,2,3};
@@ -647,7 +629,7 @@ inline void SIMON64_Dec_Block(uint32x4_p &block0, uint32x4_p &block1,
 
     for (int i = static_cast<int>(rounds-2); i >= 0; i -= 2)
     {
-#if CRYPTOPP_POWER7_AVAILABLE
+#if CRYPTOPP_POWER8_AVAILABLE
         const uint32x4_p rk1 = vec_splats(subkeys[i+1]);
         const uint32x4_p rk2 = vec_splats(subkeys[i]);
 #else
@@ -696,7 +678,7 @@ inline void SIMON64_Enc_6_Blocks(uint32x4_p &block0, uint32x4_p &block1,
 
     for (int i = 0; i < static_cast<int>(rounds & ~1)-1; i += 2)
     {
-#if CRYPTOPP_POWER7_AVAILABLE
+#if CRYPTOPP_POWER8_AVAILABLE
         const uint32x4_p rk1 = vec_splats(subkeys[i]);
         const uint32x4_p rk2 = vec_splats(subkeys[i+1]);
 #else
@@ -717,7 +699,7 @@ inline void SIMON64_Enc_6_Blocks(uint32x4_p &block0, uint32x4_p &block1,
 
     if (rounds & 1)
     {
-#if CRYPTOPP_POWER7_AVAILABLE
+#if CRYPTOPP_POWER8_AVAILABLE
         const uint32x4_p rk = vec_splats(subkeys[rounds-1]);
 #else
         const uint8x16_p m = {0,1,2,3, 0,1,2,3, 0,1,2,3, 0,1,2,3};
@@ -771,7 +753,7 @@ inline void SIMON64_Dec_6_Blocks(uint32x4_p &block0, uint32x4_p &block1,
     {
         std::swap(x1, y1); std::swap(x2, y2); std::swap(x3, y3);
 
-#if CRYPTOPP_POWER7_AVAILABLE
+#if CRYPTOPP_POWER8_AVAILABLE
         const uint32x4_p rk = vec_splats(subkeys[rounds-1]);
 #else
         const uint8x16_p m = {0,1,2,3, 0,1,2,3, 0,1,2,3, 0,1,2,3};
@@ -786,7 +768,7 @@ inline void SIMON64_Dec_6_Blocks(uint32x4_p &block0, uint32x4_p &block1,
 
     for (int i = static_cast<int>(rounds-2); i >= 0; i -= 2)
     {
-#if CRYPTOPP_POWER7_AVAILABLE
+#if CRYPTOPP_POWER8_AVAILABLE
         const uint32x4_p rk1 = vec_splats(subkeys[i+1]);
         const uint32x4_p rk2 = vec_splats(subkeys[i]);
 #else
