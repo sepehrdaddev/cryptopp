@@ -1,4 +1,4 @@
-@ Copyright 2007-2018 The OpenSSL Project Authors. All Rights Reserved.
+@ Copyright 2007-2019 The OpenSSL Project Authors. All Rights Reserved.
 @
 @ ====================================================================
 @ Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
@@ -103,24 +103,22 @@ K256:
 .align	5
 .globl	sha256_block_data_order
 .type	sha256_block_data_order,%function
+
 sha256_block_data_order:
 .Lsha256_block_data_order:
+
 #if __ARM_ARCH__<7 && !defined(__thumb2__)
-	mov	r12,r3
 	sub	r3,pc,#8		@ sha256_block_data_order
 #else
-	mov	r12,r3
 	adr	r3,.Lsha256_block_data_order
 #endif
-#if __ARM_MAX_ARCH__>=7
-	tst	r12,#ARMV7_NEON
-	bne	.LNEON
-#endif
+
 	add	r2,r1,r2,lsl#6	@ len to point at the end of inp
 	stmdb	sp!,{r0,r1,r2,r4-r11,lr}
 	ldmia	r0,{r4,r5,r6,r7,r8,r9,r10,r11}
 	sub	r14,r3,#256+32	@ K256
 	sub	sp,sp,#16*4		@ alloca(X[16])
+
 .Loop:
 # if __ARM_ARCH__>=7
 	ldr	r2,[r1],#4
@@ -1882,6 +1880,7 @@ sha256_block_data_order:
 .word	0xe12fff1e			@ interoperable with Thumb ISA:-)
 #endif
 .size	sha256_block_data_order,.-sha256_block_data_order
+
 #if __ARM_MAX_ARCH__>=7
 .arch	armv7-a
 .fpu	neon
@@ -1891,7 +1890,7 @@ sha256_block_data_order:
 .align	5
 .skip	16
 sha256_block_data_order_neon:
-.LNEON:
+
 	stmdb	sp!,{r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
 
 	sub	r11,sp,#16*4+16

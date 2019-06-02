@@ -1,4 +1,4 @@
-@ Copyright 2007-2018 The OpenSSL Project Authors. All Rights Reserved.
+@ Copyright 2007-2019 The OpenSSL Project Authors. All Rights Reserved.
 @
 @ ====================================================================
 @ Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
@@ -78,19 +78,23 @@
 
 .text
 
+.align	5
 .globl	sha1_block_data_order
 .type	sha1_block_data_order,%function
 
-.align	5
 sha1_block_data_order:
-#if __ARM_MAX_ARCH__>=7
-	mov	r12,r3
-	tst	r12,#ARMV7_NEON
-	bne	.LNEON
+.Lsha1_block_data_order:
+
+#if __ARM_ARCH__<7 && !defined(__thumb2__)
+	sub	r3,pc,#8		@ sha1_block_data_order
+#else
+	adr	r3,.Lsha1_block_data_order
 #endif
+
 	stmdb	sp!,{r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
 	add	r2,r1,r2,lsl#6	@ r2 to point at the end of r1
 	ldmia	r0,{r3,r4,r5,r6,r7}
+
 .Lloop:
 	ldr	r8,.LK_00_19
 	mov	r14,sp
@@ -551,10 +555,12 @@ sha1_block_data_order:
 .arch	armv7-a
 .fpu	neon
 
+.globl	sha1_block_data_order_neon
 .type	sha1_block_data_order_neon,%function
+
 .align	4
 sha1_block_data_order_neon:
-.LNEON:
+
 	stmdb	sp!,{r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
 	add	r2,r1,r2,lsl#6	@ r2 to point at the end of r1
 	@ dmb				@ errata #451034 on early Cortex A8

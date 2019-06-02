@@ -1,4 +1,4 @@
-@ Copyright 2007-2018 The OpenSSL Project Authors. All Rights Reserved.
+@ Copyright 2007-2019 The OpenSSL Project Authors. All Rights Reserved.
 @
 @ ====================================================================
 @ Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
@@ -133,23 +133,22 @@ K512:
 	WORD64(0x4cc5d4be,0xcb3e42b6,	0x597f299c,0xfc657e2a)
 	WORD64(0x5fcb6fab,0x3ad6faec,	0x6c44198c,0x4a475817)
 .size	K512,.-K512
+
 .skip	32
 
+.align	5
 .globl	sha512_block_data_order
 .type	sha512_block_data_order,%function
+
 sha512_block_data_order:
 .Lsha512_block_data_order:
+
 #if __ARM_ARCH__<7 && !defined(__thumb2__)
-	mov	r12,r3
 	sub	r3,pc,#8		@ sha512_block_data_order
 #else
-	mov	r12,r3
 	adr	r3,.Lsha512_block_data_order
 #endif
-#if __ARM_MAX_ARCH__>=7
-	tst	r12,#ARMV7_NEON
-	bne	.LNEON
-#endif
+
 	add	r2,r1,r2,lsl#7	@ len to point at the end of inp
 	stmdb	sp!,{r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
 	sub	r14,r3,#672		@ K512
@@ -528,18 +527,21 @@ sha512_block_data_order:
 .word	0xe12fff1e			@ interoperable with Thumb ISA:-)
 #endif
 .size	sha512_block_data_order,.-sha512_block_data_order
+
 #if __ARM_MAX_ARCH__>=7
 .arch	armv7-a
 .fpu	neon
 
+.align	4
 .globl	sha512_block_data_order_neon
 .type	sha512_block_data_order_neon,%function
-.align	4
+
 sha512_block_data_order_neon:
-.LNEON:
+
 	dmb	@ errata #451034 on early Cortex A8
 	add	r2,r1,r2,lsl#7	@ len to point at the end of inp
 	adr	r3,K512
+	vstmdb  sp!,{d8-d15}
 	vldmia	r0,{d16,d17,d18,d19,d20,d21,d22,d23}		@ load context
 .Loop_neon:
 	vshr.u64	d24,d20,#14	@ 0
@@ -1853,6 +1855,7 @@ sha512_block_data_order_neon:
 	teq	r1,r2
 	sub	r3,#640	@ rewind K512
 	bne	.Loop_neon
+	vldmia  sp!,{d8-d15}
 	bx	lr				@ .word	0xe12fff1e
 .size	sha512_block_data_order_neon,.-sha512_block_data_order_neon
 #endif
