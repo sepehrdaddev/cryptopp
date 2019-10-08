@@ -61,7 +61,7 @@ public:
 	/// \param iterations the number of iterations
 	/// \param timeInSeconds the in seconds
 	/// \returns the number of iterations performed
-	/// \throws InvalidDerivedLength if <tt>derivedLen</tt> is invalid for the scheme
+	/// \throws InvalidDerivedKeyLength if <tt>derivedLen</tt> is invalid for the scheme
 	/// \details DeriveKey() provides a standard interface to derive a key from
 	///   a seed and other parameters. Each class that derives from KeyDerivationFunction
 	///   provides an overload that accepts most parameters used by the derivation function.
@@ -82,8 +82,8 @@ protected:
 template <class T>
 size_t PKCS5_PBKDF1<T>::GetValidDerivedLength(size_t keylength) const
 {
-	if (keylength > MaxDerivedLength())
-		return MaxDerivedLength();
+	if (keylength > MaxDerivedKeyLength())
+		return MaxDerivedKeyLength();
 	return keylength;
 }
 
@@ -93,7 +93,7 @@ size_t PKCS5_PBKDF1<T>::DeriveKey(byte *derived, size_t derivedLen,
 {
 	CRYPTOPP_ASSERT(secret /*&& secretLen*/);
 	CRYPTOPP_ASSERT(derived && derivedLen);
-	CRYPTOPP_ASSERT(derivedLen <= MaxDerivedLength());
+	CRYPTOPP_ASSERT(derivedLen <= MaxDerivedKeyLength());
 
 	byte purpose = (byte)params.GetIntValueWithDefault("Purpose", 0);
 	unsigned int iterations = (unsigned int)params.GetIntValueWithDefault("Iterations", 1);
@@ -112,11 +112,11 @@ size_t PKCS5_PBKDF1<T>::DeriveKey(byte *derived, size_t derivedLen, byte purpose
 {
 	CRYPTOPP_ASSERT(secret /*&& secretLen*/);
 	CRYPTOPP_ASSERT(derived && derivedLen);
-	CRYPTOPP_ASSERT(derivedLen <= MaxDerivedLength());
+	CRYPTOPP_ASSERT(derivedLen <= MaxDerivedKeyLength());
 	CRYPTOPP_ASSERT(iterations > 0 || timeInSeconds > 0);
 	CRYPTOPP_UNUSED(purpose);
 
-	ThrowIfInvalidDerivedLength(derivedLen);
+	ThrowIfInvalidDerivedKeyLength(derivedLen);
 
 	// Business logic
 	if (!iterations) { iterations = 1; }
@@ -137,7 +137,8 @@ size_t PKCS5_PBKDF1<T>::DeriveKey(byte *derived, size_t derivedLen, byte purpose
 	for (i=1; i<iterations || (timeInSeconds && (i%128!=0 || timer.ElapsedTimeAsDouble() < timeInSeconds)); i++)
 		hash.CalculateDigest(buffer, buffer, buffer.size());
 
-	memcpy(derived, buffer, derivedLen);
+	if (derived)
+		memcpy(derived, buffer, derivedLen);
 	return i;
 }
 
@@ -186,7 +187,7 @@ public:
 	/// \param iterations the number of iterations
 	/// \param timeInSeconds the in seconds
 	/// \returns the number of iterations performed
-	/// \throws InvalidDerivedLength if <tt>derivedLen</tt> is invalid for the scheme
+	/// \throws InvalidDerivedKeyLength if <tt>derivedLen</tt> is invalid for the scheme
 	/// \details DeriveKey() provides a standard interface to derive a key from
 	///   a seed and other parameters. Each class that derives from KeyDerivationFunction
 	///   provides an overload that accepts most parameters used by the derivation function.
@@ -206,8 +207,8 @@ protected:
 template <class T>
 size_t PKCS5_PBKDF2_HMAC<T>::GetValidDerivedLength(size_t keylength) const
 {
-	if (keylength > MaxDerivedLength())
-		return MaxDerivedLength();
+	if (keylength > MaxDerivedKeyLength())
+		return MaxDerivedKeyLength();
 	return keylength;
 }
 
@@ -217,7 +218,7 @@ size_t PKCS5_PBKDF2_HMAC<T>::DeriveKey(byte *derived, size_t derivedLen,
 {
 	CRYPTOPP_ASSERT(secret /*&& secretLen*/);
 	CRYPTOPP_ASSERT(derived && derivedLen);
-	CRYPTOPP_ASSERT(derivedLen <= MaxDerivedLength());
+	CRYPTOPP_ASSERT(derivedLen <= MaxDerivedKeyLength());
 
 	byte purpose = (byte)params.GetIntValueWithDefault("Purpose", 0);
 	unsigned int iterations = (unsigned int)params.GetIntValueWithDefault("Iterations", 1);
@@ -236,16 +237,20 @@ size_t PKCS5_PBKDF2_HMAC<T>::DeriveKey(byte *derived, size_t derivedLen, byte pu
 {
 	CRYPTOPP_ASSERT(secret /*&& secretLen*/);
 	CRYPTOPP_ASSERT(derived && derivedLen);
-	CRYPTOPP_ASSERT(derivedLen <= MaxDerivedLength());
+	CRYPTOPP_ASSERT(derivedLen <= MaxDerivedKeyLength());
 	CRYPTOPP_ASSERT(iterations > 0 || timeInSeconds > 0);
 	CRYPTOPP_UNUSED(purpose);
 
-	ThrowIfInvalidDerivedLength(derivedLen);
+	ThrowIfInvalidDerivedKeyLength(derivedLen);
 
 	// Business logic
 	if (!iterations) { iterations = 1; }
 
+	// DigestSize check due to https://github.com/weidai11/cryptopp/issues/855
 	HMAC<T> hmac(secret, secretLen);
+	if (hmac.DigestSize() == 0)
+		throw InvalidArgument("PKCS5_PBKDF2_HMAC: DigestSize cannot be 0");
+
 	SecByteBlock buffer(hmac.DigestSize());
 	ThreadUserTimer timer;
 
@@ -339,7 +344,7 @@ public:
 	/// \param iterations the number of iterations
 	/// \param timeInSeconds the in seconds
 	/// \returns the number of iterations performed
-	/// \throws InvalidDerivedLength if <tt>derivedLen</tt> is invalid for the scheme
+	/// \throws InvalidDerivedKeyLength if <tt>derivedLen</tt> is invalid for the scheme
 	/// \details DeriveKey() provides a standard interface to derive a key from
 	///   a seed and other parameters. Each class that derives from KeyDerivationFunction
 	///   provides an overload that accepts most parameters used by the derivation function.
@@ -359,8 +364,8 @@ protected:
 template <class T>
 size_t PKCS12_PBKDF<T>::GetValidDerivedLength(size_t keylength) const
 {
-	if (keylength > MaxDerivedLength())
-		return MaxDerivedLength();
+	if (keylength > MaxDerivedKeyLength())
+		return MaxDerivedKeyLength();
 	return keylength;
 }
 
@@ -370,7 +375,7 @@ size_t PKCS12_PBKDF<T>::DeriveKey(byte *derived, size_t derivedLen,
 {
 	CRYPTOPP_ASSERT(secret /*&& secretLen*/);
 	CRYPTOPP_ASSERT(derived && derivedLen);
-	CRYPTOPP_ASSERT(derivedLen <= MaxDerivedLength());
+	CRYPTOPP_ASSERT(derivedLen <= MaxDerivedKeyLength());
 
 	byte purpose = (byte)params.GetIntValueWithDefault("Purpose", 0);
 	unsigned int iterations = (unsigned int)params.GetIntValueWithDefault("Iterations", 1);
@@ -390,10 +395,10 @@ size_t PKCS12_PBKDF<T>::DeriveKey(byte *derived, size_t derivedLen, byte purpose
 {
 	CRYPTOPP_ASSERT(secret /*&& secretLen*/);
 	CRYPTOPP_ASSERT(derived && derivedLen);
-	CRYPTOPP_ASSERT(derivedLen <= MaxDerivedLength());
+	CRYPTOPP_ASSERT(derivedLen <= MaxDerivedKeyLength());
 	CRYPTOPP_ASSERT(iterations > 0 || timeInSeconds > 0);
 
-	ThrowIfInvalidDerivedLength(derivedLen);
+	ThrowIfInvalidDerivedKeyLength(derivedLen);
 
 	// Business logic
 	if (!iterations) { iterations = 1; }

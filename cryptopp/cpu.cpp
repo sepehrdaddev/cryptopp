@@ -328,8 +328,8 @@ void DetectX86Features()
 
 	// AVX is similar to SSE, but check both bits 27 (SSE) and 28 (AVX).
 	// https://software.intel.com/en-us/blogs/2011/04/14/is-avx-enabled
-	CRYPTOPP_CONSTANT(YMM_FLAG = (3 <<  1))
-	CRYPTOPP_CONSTANT(AVX_FLAG = (3 << 27))
+	CRYPTOPP_CONSTANT(YMM_FLAG = (3 <<  1));
+	CRYPTOPP_CONSTANT(AVX_FLAG = (3 << 27));
 	if ((cpuid1[2] & AVX_FLAG) == AVX_FLAG)
 	{
 
@@ -389,11 +389,11 @@ void DetectX86Features()
 
 	if (IsIntel(cpuid0))
 	{
-		CRYPTOPP_CONSTANT(RDRAND_FLAG = (1 << 30))
-		CRYPTOPP_CONSTANT(RDSEED_FLAG = (1 << 18))
-		CRYPTOPP_CONSTANT(   ADX_FLAG = (1 << 19))
-		CRYPTOPP_CONSTANT(   SHA_FLAG = (1 << 29))
-		CRYPTOPP_CONSTANT(  AVX2_FLAG = (1 <<  5))
+		CRYPTOPP_CONSTANT(RDRAND_FLAG = (1 << 30));
+		CRYPTOPP_CONSTANT(RDSEED_FLAG = (1 << 18));
+		CRYPTOPP_CONSTANT(   ADX_FLAG = (1 << 19));
+		CRYPTOPP_CONSTANT(   SHA_FLAG = (1 << 29));
+		CRYPTOPP_CONSTANT(  AVX2_FLAG = (1 <<  5));
 
 		g_isP4 = ((cpuid1[0] >> 8) & 0xf) == 0xf;
 		g_cacheLineSize = 8 * GETBYTE(cpuid1[1], 1);
@@ -412,11 +412,11 @@ void DetectX86Features()
 	}
 	else if (IsAMD(cpuid0) || IsHygon(cpuid0))
 	{
-		CRYPTOPP_CONSTANT(RDRAND_FLAG = (1 << 30))
-		CRYPTOPP_CONSTANT(RDSEED_FLAG = (1 << 18))
-		CRYPTOPP_CONSTANT(   ADX_FLAG = (1 << 19))
-		CRYPTOPP_CONSTANT(   SHA_FLAG = (1 << 29))
-		CRYPTOPP_CONSTANT(  AVX2_FLAG = (1 <<  5))
+		CRYPTOPP_CONSTANT(RDRAND_FLAG = (1 << 30));
+		CRYPTOPP_CONSTANT(RDSEED_FLAG = (1 << 18));
+		CRYPTOPP_CONSTANT(   ADX_FLAG = (1 << 19));
+		CRYPTOPP_CONSTANT(   SHA_FLAG = (1 << 29));
+		CRYPTOPP_CONSTANT(  AVX2_FLAG = (1 <<  5));
 
 		CpuId(0x80000005, 0, cpuid2);
 		g_cacheLineSize = GETBYTE(cpuid2[2], 0);
@@ -436,11 +436,11 @@ void DetectX86Features()
 	else if (IsVIA(cpuid0))
 	{
 		// Two bits: available and enabled
-		CRYPTOPP_CONSTANT( RNG_FLAGS = (0x3 << 2))
-		CRYPTOPP_CONSTANT( ACE_FLAGS = (0x3 << 6))
-		CRYPTOPP_CONSTANT(ACE2_FLAGS = (0x3 << 8))
-		CRYPTOPP_CONSTANT( PHE_FLAGS = (0x3 << 10))
-		CRYPTOPP_CONSTANT( PMM_FLAGS = (0x3 << 12))
+		CRYPTOPP_CONSTANT( RNG_FLAGS = (0x3 << 2));
+		CRYPTOPP_CONSTANT( ACE_FLAGS = (0x3 << 6));
+		CRYPTOPP_CONSTANT(ACE2_FLAGS = (0x3 << 8));
+		CRYPTOPP_CONSTANT( PHE_FLAGS = (0x3 << 10));
+		CRYPTOPP_CONSTANT( PMM_FLAGS = (0x3 << 12));
 
 		CpuId(0xC0000000, 0, cpuid2);
 		word32 extendedFeatures = cpuid2[0];
@@ -465,7 +465,7 @@ void DetectX86Features()
 #if defined(_SC_LEVEL1_DCACHE_LINESIZE)
 	// Glibc does not implement on some platforms. The runtime returns 0 instead of error.
 	// https://sourceware.org/git/?p=glibc.git;a=blob;f=sysdeps/posix/sysconf.c
-	int cacheLineSize = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+	int cacheLineSize = (int)sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
 	if (g_cacheLineSize == 0 && cacheLineSize > 0)
 		g_cacheLineSize = cacheLineSize;
 #endif
@@ -853,7 +853,7 @@ void DetectArmFeatures()
 #if defined(_SC_LEVEL1_DCACHE_LINESIZE)
 	// Glibc does not implement on some platforms. The runtime returns 0 instead of error.
 	// https://sourceware.org/git/?p=glibc.git;a=blob;f=sysdeps/posix/sysconf.c
-	int cacheLineSize = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+	int cacheLineSize = (int)sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
 	if (cacheLineSize > 0)
 		g_cacheLineSize = cacheLineSize;
 #endif
@@ -890,24 +890,6 @@ extern bool CPU_ProbeSHA256();
 extern bool CPU_ProbeSHA512();
 extern bool CPU_ProbeDARN();
 
-// Linux define values from 64-Bit ELF V2 ABI Specification.
-// http://openpowerfoundation.org/wp-content/uploads/resources/leabi/content/ch_preface.html
-#ifndef PPC_FEATURE_HAS_ALTIVEC
-# define PPC_FEATURE_HAS_ALTIVEC  0x10000000
-#endif
-#ifndef PPC_FEATURE_ARCH_2_06
-# define PPC_FEATURE_ARCH_2_06    0x00000100
-#endif
-#ifndef PPC_FEATURE2_ARCH_2_07
-# define PPC_FEATURE2_ARCH_2_07   0x80000000
-#endif
-#ifndef PPC_FEATURE2_ARCH_3_00
-# define PPC_FEATURE2_ARCH_3_00   0x00800000
-#endif
-#ifndef PPC_FEATURE2_VEC_CRYPTO
-# define PPC_FEATURE2_VEC_CRYPTO  0x02000000
-#endif
-
 // AIX defines. We used to just call __power_7_andup()
 // and friends but at Power9, too many compilers were
 // missing __power_9_andup(). Instead we switched to
@@ -929,7 +911,7 @@ extern bool CPU_ProbeDARN();
 // was available much earlier for other vendors.
 inline bool CPU_QueryAltivec()
 {
-#if defined(__linux__)
+#if defined(__linux__) && defined(PPC_FEATURE_HAS_ALTIVEC)
 	if ((getauxval(AT_HWCAP) & PPC_FEATURE_HAS_ALTIVEC) != 0)
 		return true;
 #elif defined(_AIX)
@@ -946,7 +928,7 @@ inline bool CPU_QueryAltivec()
 inline bool CPU_QueryPower7()
 {
 	// Power7 and ISA 2.06
-#if defined(__linux__)
+#if defined(__linux__) && defined(PPC_FEATURE_ARCH_2_06)
 	if ((getauxval(AT_HWCAP) & PPC_FEATURE_ARCH_2_06) != 0)
 		return true;
 #elif defined(_AIX)
@@ -959,7 +941,7 @@ inline bool CPU_QueryPower7()
 inline bool CPU_QueryPower8()
 {
 	// Power8 and ISA 2.07 provide in-core crypto.
-#if defined(__linux__)
+#if defined(__linux__) && defined(PPC_FEATURE2_ARCH_2_07)
 	if ((getauxval(AT_HWCAP2) & PPC_FEATURE2_ARCH_2_07) != 0)
 		return true;
 #elif defined(_AIX)
@@ -972,7 +954,7 @@ inline bool CPU_QueryPower8()
 inline bool CPU_QueryPower9()
 {
 	// Power9 and ISA 3.0.
-#if defined(__linux__)
+#if defined(__linux__) && defined(PPC_FEATURE2_ARCH_3_00)
 	if ((getauxval(AT_HWCAP2) & PPC_FEATURE2_ARCH_3_00) != 0)
 		return true;
 #elif defined(_AIX)
@@ -986,7 +968,7 @@ inline bool CPU_QueryAES()
 {
 	// Power8 and ISA 2.07 provide in-core crypto. Glibc
 	// 2.24 or higher is required for PPC_FEATURE2_VEC_CRYPTO.
-#if defined(__linux__)
+#if defined(__linux__) && defined(PPC_FEATURE2_VEC_CRYPTO)
 	if ((getauxval(AT_HWCAP2) & PPC_FEATURE2_VEC_CRYPTO) != 0)
 		return true;
 #elif defined(_AIX)
@@ -1000,7 +982,7 @@ inline bool CPU_QueryPMULL()
 {
 	// Power8 and ISA 2.07 provide in-core crypto. Glibc
 	// 2.24 or higher is required for PPC_FEATURE2_VEC_CRYPTO.
-#if defined(__linux__)
+#if defined(__linux__) && defined(PPC_FEATURE2_VEC_CRYPTO)
 	if ((getauxval(AT_HWCAP2) & PPC_FEATURE2_VEC_CRYPTO) != 0)
 		return true;
 #elif defined(_AIX)
@@ -1014,7 +996,7 @@ inline bool CPU_QuerySHA256()
 {
 	// Power8 and ISA 2.07 provide in-core crypto. Glibc
 	// 2.24 or higher is required for PPC_FEATURE2_VEC_CRYPTO.
-#if defined(__linux__)
+#if defined(__linux__) && defined(PPC_FEATURE2_VEC_CRYPTO)
 	if ((getauxval(AT_HWCAP2) & PPC_FEATURE2_VEC_CRYPTO) != 0)
 		return true;
 #elif defined(_AIX)
@@ -1027,7 +1009,7 @@ inline bool CPU_QuerySHA512()
 {
 	// Power8 and ISA 2.07 provide in-core crypto. Glibc
 	// 2.24 or higher is required for PPC_FEATURE2_VEC_CRYPTO.
-#if defined(__linux__)
+#if defined(__linux__) && defined(PPC_FEATURE2_VEC_CRYPTO)
 	if ((getauxval(AT_HWCAP2) & PPC_FEATURE2_VEC_CRYPTO) != 0)
 		return true;
 #elif defined(_AIX)
@@ -1041,7 +1023,7 @@ inline bool CPU_QuerySHA512()
 inline bool CPU_QueryDARN()
 {
 	// Power9 and ISA 3.0 provide DARN.
-#if defined(__linux__)
+#if defined(__linux__) && defined(PPC_FEATURE2_ARCH_3_00)
 	if ((getauxval(AT_HWCAP2) & PPC_FEATURE2_ARCH_3_00) != 0)
 		return true;
 #elif defined(_AIX)
@@ -1073,7 +1055,7 @@ void DetectPowerpcFeatures()
 #elif defined(_SC_LEVEL1_DCACHE_LINESIZE)
 	// Glibc does not implement on some platforms. The runtime returns 0 instead of error.
 	// https://sourceware.org/git/?p=glibc.git;a=blob;f=sysdeps/posix/sysconf.c
-	int cacheLineSize = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+	int cacheLineSize = (int)sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
 	if (cacheLineSize > 0)
 		g_cacheLineSize = cacheLineSize;
 #endif

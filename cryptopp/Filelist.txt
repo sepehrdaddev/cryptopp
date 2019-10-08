@@ -11,6 +11,8 @@ algebra.cpp
 algebra.h
 algparam.cpp
 algparam.h
+allocate.cpp
+allocate.h
 arc4.cpp
 arc4.h
 ariatab.cpp
@@ -279,6 +281,7 @@ rdrand.s
 rdrand.asm
 rdrand.cpp
 rdrand.h
+rdseed.asm
 rdtables.cpp
 regtest1.cpp
 regtest2.cpp
@@ -305,6 +308,7 @@ scrypt.h
 seal.cpp
 seal.h
 secblock.h
+secblockfwd.h
 seckey.h
 seed.cpp
 seed.h
@@ -437,6 +441,8 @@ TestData/dlie2048.dat
 TestData/dsa1024.dat
 TestData/dsa1024b.dat
 TestData/dsa512.dat
+TestData/ecies_p160.dat
+TestData/ecies_t163.dat
 TestData/ed25519.dat
 TestData/ed25519_ver.dat
 TestData/ed25519v0.dat

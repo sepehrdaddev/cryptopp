@@ -14,6 +14,12 @@ TMPDIR ?= /tmp
 TOUT ?= a.out
 TOUT := $(strip $(TOUT))
 
+# Allow override for the cryptest.exe recipe. Change to
+# ./libcryptopp.so or ./libcryptopp.dylib to suit your
+# taste. https://github.com/weidai11/cryptopp/issues/866
+LINK_LIBRARY ?= libcryptopp.a
+LINK_LIBRARY_PATH ?= ./
+
 # Command and arguments
 AR ?= ar
 ARFLAGS ?= -cr # ar needs the dash on OpenBSD
@@ -119,9 +125,10 @@ else ifeq ($(findstring distclean,$(MAKECMDGOALS)),trim)
   DETECT_FEATURES := 0
 endif
 
-# Strip out -Wall, -Wextra and friends for feature testing
+# Strip out -Wall, -Wextra and friends for feature testing. FORTIFY_SOURCE is removed
+# because it requires -O1 or higher, but we use -O0 to tame the optimizer.
 ifeq ($(DETECT_FEATURES),1)
-  TCXXFLAGS := $(filter-out -Wall -Wextra -Werror% -Wunused -Wconversion -Wp%, $(CXXFLAGS))
+  TCXXFLAGS := $(filter-out -D_FORTIFY_SOURCE=% -Wall -Wextra -Werror% -Wunused -Wconversion -Wp%, $(CXXFLAGS))
   ifneq ($(strip $(TCXXFLAGS)),)
     $(info Using testing flags: $(TCXXFLAGS))
   endif
@@ -860,6 +867,15 @@ ifeq ($(findstring native,$(MAKECMDGOALS)),native)
     NATIVE_OPT = -march=native
   endif # NATIVE_OPT
 
+  # And tune
+  ifeq ($(NATIVE_OPT),)
+    TOPT = -mtune=native
+    HAVE_OPT = $(shell $(CXX) $(TCXXFLAGS) $(ZOPT) $(TOPT) $(TPROG) -o $(TOUT) 2>&1 | tr ' ' '\n' | wc -l)
+    ifeq ($(strip $(HAVE_OPT)),0)
+      NATIVE_OPT = -mtune=native
+    endif # NATIVE_OPT
+  endif
+
   # Try SunCC next
   ifeq ($(NATIVE_OPT),)
     TOPT = -native
@@ -947,9 +963,9 @@ ifneq ($(filter valgrind,$(MAKECMDGOALS)),)
   CXXFLAGS := $(CXXFLAGS:-g%=-g3)
   CXXFLAGS := $(CXXFLAGS:-O%=-O1)
   CXXFLAGS := $(CXXFLAGS:-xO%=-xO1)
-  ifeq ($(findstring -DCRYPTOPP_VALGRIND,$(CXXFLAGS)),)
-    CXXFLAGS += -DCRYPTOPP_VALGRIND
-  endif # -DCRYPTOPP_VALGRIND
+  ifeq ($(findstring -DCRYPTOPP_COVERAGE,$(CXXFLAGS)),)
+    CXXFLAGS += -DCRYPTOPP_COVERAGE
+  endif # -DCRYPTOPP_COVERAGE
 endif # Valgrind
 
 # Debug testing on GNU systems. Triggered by -DDEBUG.
@@ -1108,10 +1124,6 @@ else
 static: libcryptopp.a
 shared dynamic: libcryptopp.so$(SOLIB_VERSION_SUFFIX)
 endif
-
-.PHONY: dep deps depend
-dep deps depend GNUmakefile.deps:
-	$(CXX) $(strip $(CXXFLAGS) -DCRYPTOPP_DISABLE_ASM) -MM *.cpp > GNUmakefile.deps
 
 # CXXFLAGS are tuned earlier.
 .PHONY: native no-asm asan ubsan
@@ -1278,10 +1290,14 @@ remove uninstall:
 	-$(RM) -r $(DESTDIR)$(INCLUDEDIR)/cryptopp
 	-$(RM) $(DESTDIR)$(LIBDIR)/libcryptopp.a
 	-$(RM) $(DESTDIR)$(BINDIR)/cryptest.exe
-	@-$(RM) $(DESTDIR)$(LIBDIR)/libcryptopp.dylib
+ifneq ($(wildcard $(DESTDIR)$(LIBDIR)/libcryptopp.dylib),)
+	-$(RM) $(DESTDIR)$(LIBDIR)/libcryptopp.dylib
+endif
+ifneq ($(wildcard $(DESTDIR)$(LIBDIR)/libcryptopp.so),)
+	-$(RM) $(DESTDIR)$(LIBDIR)/libcryptopp.so
+endif
 	@-$(RM) $(DESTDIR)$(LIBDIR)/libcryptopp.so$(SOLIB_VERSION_SUFFIX)
 	@-$(RM) $(DESTDIR)$(LIBDIR)/libcryptopp.so$(SOLIB_COMPAT_SUFFIX)
-	@-$(RM) $(DESTDIR)$(LIBDIR)/libcryptopp.so
 	@-$(RM) $(DESTDIR)$(LIBDIR)/pkgconfig/libcryptopp.pc
 	@-$(RM) -r $(DESTDIR)$(DATADIR)/cryptopp
 
@@ -1310,8 +1326,8 @@ endif
 libcryptopp.dylib: $(LIBOBJS)
 	$(CXX) -dynamiclib -o $@ $(strip $(CXXFLAGS)) -install_name "$@" -current_version "$(LIB_MAJOR).$(LIB_MINOR).$(LIB_PATCH)" -compatibility_version "$(LIB_MAJOR).$(LIB_MINOR)" -headerpad_max_install_names $(LDFLAGS) $(LIBOBJS)
 
-cryptest.exe:libcryptopp.a $(TESTOBJS)
-	$(CXX) -o $@ $(strip $(CXXFLAGS)) $(TESTOBJS) ./libcryptopp.a $(LDFLAGS) $(LDLIBS)
+cryptest.exe: $(LINK_LIBRARY) $(TESTOBJS)
+	$(CXX) -o $@ $(strip $(CXXFLAGS)) $(TESTOBJS) $(LINK_LIBRARY_PATH)$(LINK_LIBRARY) $(LDFLAGS) $(LDLIBS)
 
 # Makes it faster to test changes
 nolib: $(OBJS)
@@ -1616,3 +1632,8 @@ ifeq ($(HAS_SOLIB_VERSION),1)
 	$(info WARNING: to run 'ldconfig' to update the shared-object library cache.)
 	$(info )
 endif
+
+.PHONY: dep deps depend
+dep deps depend GNUmakefile.deps:
+	$(CXX) $(strip $(CXXFLAGS) -DCRYPTOPP_DISABLE_ASM) -MM *.cpp > GNUmakefile.deps
+

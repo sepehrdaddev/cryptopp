@@ -38,20 +38,6 @@
 // Also see https://bugs.llvm.org/show_bug.cgi?id=39895 .
 // #define CRYPTOPP_DISABLE_MIXED_ASM 1
 
-// Define CRYPTOPP_NO_CXX11 to avoid C++11 related features shown at the
-// end of this file. Some compilers and standard C++ headers advertise C++11
-// but they are really just C++03 with some additional C++11 headers and
-// non-conforming classes. You might also consider `-std=c++03` or
-// `-std=gnu++03`, but they are required options when building the library
-// and all programs. CRYPTOPP_NO_CXX11 is probably easier to manage but it may
-// cause -Wterminate warnings under GCC. MSVC++ has a similar warning.
-// Also see https://github.com/weidai11/cryptopp/issues/529
-// #define CRYPTOPP_NO_CXX11 1
-
-// Define CRYPTOPP_NO_CXX17 to avoid C++17 related features shown at the end of
-// this file. At the moment it should only affect std::uncaught_exceptions.
-// #define CRYPTOPP_NO_CXX17 1
-
 // CRYPTOPP_ALLOW_UNALIGNED_DATA_ACCESS is no longer honored. It
 // was removed at https://github.com/weidai11/cryptopp/issues/682
 // #define CRYPTOPP_ALLOW_UNALIGNED_DATA_ACCESS 1
@@ -110,7 +96,7 @@
 #endif
 
 // 32-bit SunCC does not enable SSE2 by default.
-#if !defined(CRYPTOPP_DISABLE_ASM) && (defined(_MSC_VER) || CRYPTOPP_GCC_VERSION >= 30300 || defined(__SSE2__) || (__SUNPRO_CC >= 0x5100))
+#if !defined(CRYPTOPP_DISABLE_ASM) && !defined(CRYPTOPP_DISABLE_SSE2) && (defined(_MSC_VER) || CRYPTOPP_GCC_VERSION >= 30300 || defined(__SSE2__) || (__SUNPRO_CC >= 0x5100))
 	#define CRYPTOPP_SSE2_INTRIN_AVAILABLE 1
 #endif
 
@@ -184,6 +170,34 @@
 	(CRYPTOPP_GCC_VERSION >= 40900) || (__INTEL_COMPILER >= 1300) || \
 	(CRYPTOPP_LLVM_CLANG_VERSION >= 30400) || (CRYPTOPP_APPLE_CLANG_VERSION >= 50100))
 	#define CRYPTOPP_SHANI_AVAILABLE 1
+#endif
+
+// RDRAND uses byte codes. All we need is x86 ASM for it.
+// However tie it to AES-NI since SecureKey was available with it.
+#if !defined(CRYPTOPP_DISABLE_RDRAND) && defined(CRYPTOPP_AESNI_AVAILABLE) && \
+	!(defined(__ANDROID__) || defined(ANDROID)) && \
+	defined(CRYPTOPP_X86_ASM_AVAILABLE)
+	#define CRYPTOPP_RDRAND_AVAILABLE 1
+#endif
+
+// RDSEED uses byte codes. All we need is x86 ASM for it.
+// However tie it to AES-NI since SecureKey was available with it.
+#if !defined(CRYPTOPP_DISABLE_RDSEED) && defined(CRYPTOPP_AESNI_AVAILABLE) && \
+	!(defined(__ANDROID__) || defined(ANDROID)) && \
+	defined(CRYPTOPP_X86_ASM_AVAILABLE)
+	#define CRYPTOPP_RDSEED_AVAILABLE 1
+#endif
+
+// PadlockRNG uses byte codes. All we need is x86 ASM for it.
+#if !defined(CRYPTOPP_DISABLE_PADLOCK) && \
+	!(defined(__ANDROID__) || defined(ANDROID) || defined(__APPLE__)) && \
+	defined(CRYPTOPP_X86_ASM_AVAILABLE)
+	#define CRYPTOPP_PADLOCK_AVAILABLE 1
+	#define CRYPTOPP_PADLOCK_RNG_AVAILABLE 1
+	#define CRYPTOPP_PADLOCK_ACE_AVAILABLE 1
+	#define CRYPTOPP_PADLOCK_ACE2_AVAILABLE 1
+	#define CRYPTOPP_PADLOCK_PHE_AVAILABLE 1
+	#define CRYPTOPP_PADLOCK_PMM_AVAILABLE 1
 #endif
 
 // Fixup Android and SSE, Crypto. It may be enabled based on compiler version.

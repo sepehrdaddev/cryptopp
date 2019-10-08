@@ -24,6 +24,9 @@
 
 #if defined(__XOP__)
 # include <ammintrin.h>
+# if defined(__GNUC__)
+#  include <x86intrin.h>
+# endif
 #endif
 
 #if defined(__AVX512F__)
@@ -178,7 +181,7 @@ template <unsigned int IDX>
 inline uint32x4_t UnpackNEON(const uint32x4_t& a, const uint32x4_t& b, const uint32x4_t& c, const uint32x4_t& d)
 {
     // Should not be instantiated
-    CRYPTOPP_ASSERT(0);;
+    CRYPTOPP_ASSERT(0);
     return vmovq_n_u32(0);
 }
 
@@ -218,7 +221,7 @@ template <unsigned int IDX>
 inline uint32x4_t UnpackNEON(const uint32x4_t& v)
 {
     // Should not be instantiated
-    CRYPTOPP_ASSERT(0);;
+    CRYPTOPP_ASSERT(0);
     return vmovq_n_u32(0);
 }
 

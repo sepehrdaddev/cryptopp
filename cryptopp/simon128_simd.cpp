@@ -24,6 +24,9 @@
 
 #if defined(__XOP__)
 # include <ammintrin.h>
+# if defined(__GNUC__)
+#  include <x86intrin.h>
+# endif
 #endif
 
 #if defined(__AVX512F__)
@@ -287,7 +290,7 @@ inline void SIMON128_Dec_6_Blocks(uint64x2_t &block0, uint64x2_t &block1,
 
 #if defined(CRYPTOPP_SSSE3_AVAILABLE)
 
-// Clang __m128i casts, http://bugs.llvm.org/show_bug.cgi?id=20670
+// Clang intrinsic casts, http://bugs.llvm.org/show_bug.cgi?id=20670
 #ifndef M128_CAST
 # define M128_CAST(x) ((__m128i *)(void *)(x))
 #endif

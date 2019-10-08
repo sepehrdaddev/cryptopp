@@ -211,6 +211,18 @@ function(CheckCompileLinkOption opt var prog)
 
     # TODO: improve this...
     CHECK_CXX_COMPILER_FLAG(${opt} ${var})
+    
+  elseif (APPLE)
+
+    message(STATUS "Performing Test ${var}")
+    try_compile(COMMAND_SUCCESS ${CMAKE_BINARY_DIR} ${prog} COMPILE_DEFINITIONS ${opt})
+    if (COMMAND_SUCCESS)
+      set(${var} 1 PARENT_SCOPE)
+      message(STATUS "Performing Test ${var} - Success")
+    else ()
+      set(${var} 0 PARENT_SCOPE)
+      message(STATUS "Performing Test ${var} - Failed")
+    endif ()
 
   else ()
 
@@ -557,6 +569,7 @@ if (MSVC AND NOT DISABLE_ASM)
     enable_language(ASM_MASM)
     list(APPEND cryptopp_SOURCES_ASM
       ${SRC_DIR}/rdrand.asm
+      ${SRC_DIR}/rdseed.asm
       )
     if (CMAKE_SIZEOF_VOID_P EQUAL 8)
       list(APPEND cryptopp_SOURCES_ASM

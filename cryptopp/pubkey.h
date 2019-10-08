@@ -770,7 +770,9 @@ public:
 		if (m_validationLevel > level)
 			return true;
 
+		CRYPTOPP_ASSERT(ValidateGroup(rng, level));
 		bool pass = ValidateGroup(rng, level);
+		CRYPTOPP_ASSERT(ValidateElement(level, GetSubgroupGenerator(), &GetBasePrecomputation()));
 		pass = pass && ValidateElement(level, GetSubgroupGenerator(), &GetBasePrecomputation());
 
 		m_validationLevel = pass ? level+1 : 0;
@@ -886,7 +888,7 @@ public:
 	/// \brief Retrieves the encoded element's size
 	/// \param reversible flag indicating the encoding format
 	/// \return encoded element's size, in bytes
-	/// \details The format of the encoded element varies by the underlyinhg type of the element and the
+	/// \details The format of the encoded element varies by the underlying type of the element and the
 	///   reversible flag. GetEncodedElementSize() must be implemented in a derived class.
 	/// \sa GetEncodedElementSize(), EncodeElement(), DecodeElement()
 	virtual unsigned int GetEncodedElementSize(bool reversible) const =0;
@@ -1215,14 +1217,21 @@ public:
 	// GeneratableCryptoMaterial
 	bool Validate(RandomNumberGenerator &rng, unsigned int level) const
 	{
+		CRYPTOPP_ASSERT(GetAbstractGroupParameters().Validate(rng, level));
 		bool pass = GetAbstractGroupParameters().Validate(rng, level);
 
 		const Integer &q = GetAbstractGroupParameters().GetSubgroupOrder();
 		const Integer &x = GetPrivateExponent();
 
+		CRYPTOPP_ASSERT(x.IsPositive());
+		CRYPTOPP_ASSERT(x < q);
 		pass = pass && x.IsPositive() && x < q;
+
 		if (level >= 1)
+		{
+			CRYPTOPP_ASSERT(Integer::Gcd(x, q) == Integer::One());
 			pass = pass && Integer::Gcd(x, q) == Integer::One();
+		}
 		return pass;
 	}
 
@@ -1305,7 +1314,9 @@ public:
 	// CryptoMaterial
 	bool Validate(RandomNumberGenerator &rng, unsigned int level) const
 	{
+		CRYPTOPP_ASSERT(GetAbstractGroupParameters().Validate(rng, level));
 		bool pass = GetAbstractGroupParameters().Validate(rng, level);
+		CRYPTOPP_ASSERT(GetAbstractGroupParameters().ValidateElement(level, this->GetPublicElement(), &GetPublicPrecomputation()));
 		pass = pass && GetAbstractGroupParameters().ValidateElement(level, this->GetPublicElement(), &GetPublicPrecomputation());
 		return pass;
 	}
@@ -1604,10 +1615,10 @@ public:
 		if (rng.CanIncorporateEntropy())
 			rng.IncorporateEntropy(representative, representative.size());
 
-		Integer k;
+		Integer k, ks;
+		const Integer& q = params.GetSubgroupOrder();
 		if (alg.IsDeterministic())
 		{
-			const Integer& q = params.GetSubgroupOrder();
 			const Integer& x = key.GetPrivateExponent();
 			const DeterministicSignatureAlgorithm& det = dynamic_cast<const DeterministicSignatureAlgorithm&>(alg);
 			k = det.GenerateRandom(x, q, e);
@@ -1617,8 +1628,15 @@ public:
 			k.Randomize(rng, 1, params.GetSubgroupOrder()-1);
 		}
 
+		// Due to timing attack on nonce length by Jancar
+		// https://github.com/weidai11/cryptopp/issues/869
+		ks = k + q;
+		if (ks.BitCount() == q.BitCount()) {
+			ks += q;
+		}
+
 		Integer r, s;
-		r = params.ConvertElementToInteger(params.ExponentiateBase(k));
+		r = params.ConvertElementToInteger(params.ExponentiateBase(ks));
 		alg.Sign(params, key.GetPrivateExponent(), k, e, r, s);
 
 		/*
@@ -1630,7 +1648,7 @@ public:
 		alg.Sign(params, key.GetPrivateExponent(), ma.m_k, e, r, s);
 		*/
 
-		size_t rLen = alg.RLen(params);
+		const size_t rLen = alg.RLen(params);
 		r.Encode(signature, rLen);
 		s.Encode(signature+rLen, alg.SLen(params));
 
@@ -1673,7 +1691,7 @@ public:
 		const DL_ElgamalLikeSignatureAlgorithm<T> &alg = this->GetSignatureAlgorithm();
 		const DL_GroupParameters<T> &params = this->GetAbstractGroupParameters();
 
-		size_t rLen = alg.RLen(params);
+		const size_t rLen = alg.RLen(params);
 		ma.m_semisignature.Assign(signature, rLen);
 		ma.m_s.Decode(signature+rLen, alg.SLen(params));
 
